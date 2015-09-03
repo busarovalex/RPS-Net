@@ -1,0 +1,13 @@
+[package]
+
+name = "rps_net"
+version = "0.0.1"
+authors = [ "Busarov Alex" ]
+
+[dependencies]
+rustc-serialize = "0.3.16"
+bincode = "0.4.0"
+log = "*"
+
+[dependencies.rps]
+git = "https://github.com/SpiderPigSpy/RockPaperScissors.git"
