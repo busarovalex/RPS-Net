@@ -87,8 +87,31 @@ impl Client {
         self.move_to_write = Some(movement);
     }
     
+    pub fn re_join(&mut self) {
+        let (state, de_buff) = Client::join_game(&mut self.stream);
+        self.game_state = state;
+        self.de_buf.push_all(&de_buff[..]);
+    }
+    
+    fn write(&mut self) {
+        match self.stream.write(&self.to_write[..]) {
+            Ok(written) => {
+                trace!("Written, {}", written);
+                let mut still = self.to_write.split_off(written);
+                ::std::mem::swap(&mut self.to_write, &mut still);
+            },
+            Err(err) => { error!("Didn't write: {}", err); },
+        }
+    }
+    
     pub fn one_cycle(&mut self) {
         trace!("New cycle");
+        if self.game_state.winner.is_some() {
+            self.to_write.push_all(&ser(ClientCommand::Ping)[..]);
+            self.write(); 
+            return;
+        }
+        
         if let Some(mov) = self.move_to_write.take() {
             trace!("Sending {:?}", mov);
             let comm = ClientCommand::MakeMove(self.game_state.turns, mov);
@@ -98,14 +121,7 @@ impl Client {
             self.to_write.push_all(&ser(ClientCommand::Ping)[..]);
         }
         
-        match self.stream.write(&self.to_write[..]) {
-            Ok(written) => {
-                trace!("Written, {}", written);
-                let mut still = self.to_write.split_off(written);
-                ::std::mem::swap(&mut self.to_write, &mut still);
-            },
-            Err(err) => { error!("Didn't write: {}", err); },
-        }
+        self.write();
         
         if let Ok(read) = self.stream.read(&mut self.buf[..]) {
             self.de_buf.push_all(&self.buf[0..read]);
