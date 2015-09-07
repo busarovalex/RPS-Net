@@ -1,6 +1,6 @@
 use rustc_serialize::{Decodable, Encodable};
 use bincode::SizeLimit;
-use bincode::rustc_serialize::{encode, decode};
+use bincode::rustc_serialize::{encode, decode, DecodingError};
 use std::mem::{transmute, swap};
 
 pub fn ser<T: Encodable>(data: T) -> Vec<u8> {
@@ -13,17 +13,16 @@ pub fn ser<T: Encodable>(data: T) -> Vec<u8> {
     encoded
 }
 
-pub fn de<T: Decodable>(buf: &mut Vec<u8>) -> Option<T> {
-    if buf.len() <= 5 { return None; }
+pub fn de<T: Decodable>(buf: &mut Vec<u8>) -> Result<Option<T>, DecodingError> {
+    if buf.len() <= 5 { return Ok(None); }
     let len: u32 = unsafe { transmute( (buf[0], buf[1], buf[2], buf[3]) ) };
-    if buf.len() < len as usize + 4 { return None; }
+    if buf.len() < (len as usize + 4) { return Ok(None); }
     
-    let com = decode(&buf[4..len as usize + 4]).ok();
-    if com.is_some() {
-        let mut still = buf.split_off(len as usize + 4);
-        swap(buf, &mut still);
-    }
-    com
+    let com = try!( decode(&buf[4..len as usize + 4]) );
+    
+    let mut still = buf.split_off(len as usize + 4);
+    swap(buf, &mut still);
+    Ok(Some(com))
 }
 
 #[test]
@@ -31,7 +30,8 @@ fn test_ser_de() {
     use client_commands::ClientCommand;
     let ping = ClientCommand::Ping;
     let mut vec = ser(ping);
-    let de: ClientCommand = de(&mut vec).unwrap();
+    println!("{:?}", &vec);
+    let de: ClientCommand = de(&mut vec).unwrap().unwrap();
     assert_eq!(de, ping);
     assert!(vec.is_empty());
 }

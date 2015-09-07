@@ -67,12 +67,16 @@ impl Client {
             if let Ok(read) = stream.read(&mut buf[..]) {
                 de_buf.push_all(&buf[0..read]);
             }
-            if let Some(comm) = de(&mut de_buf) {
-                trace!("Received command: {:?}", &comm);
-                match comm {
-                    ServerCommand::GameState(state) => { game_state = state; break;},
-                    _ => {},
-                }
+            match de(&mut de_buf) {
+                Ok(Some(comm)) =>  {
+                    trace!("Received command: {:?}", &comm);
+                    match comm {
+                        ServerCommand::GameState(state) => { game_state = state; break;},
+                        _ => {},
+                    }
+                },
+                Ok(None) => {},
+                Err(err) => { error!("Error in decoding while joining game: {:?}", err); },
             }
             ::std::thread::sleep_ms(TIMEOUT_MSEC);
         }
@@ -100,7 +104,10 @@ impl Client {
                 let mut still = self.to_write.split_off(written);
                 ::std::mem::swap(&mut self.to_write, &mut still);
             },
-            Err(err) => { error!("Didn't write: {}", err); },
+            Err(err) => { 
+                error!("Didn't write: {}", err);
+                ::std::process::exit(1);
+            },
         }
     }
     
@@ -127,16 +134,26 @@ impl Client {
             self.de_buf.push_all(&self.buf[0..read]);
         }
         
-        while let Some(comm) = de(&mut self.de_buf) {
-            match comm {
-                ServerCommand::GameState(game_state) => {
-                    debug!("Got game state: turn {}", game_state.turns);
-                    self.game_state = game_state;
+        loop {
+            match de(&mut self.de_buf) {
+                Ok(Some(comm)) => {
+                    match comm {
+                        ServerCommand::GameState(game_state) => {
+                            debug!("Got game state: turn {}", game_state.turns);
+                            self.game_state = game_state;
+                        },
+                        ServerCommand::InvalidMove(turn, mov) => {
+                            debug!("Move {:?} at turn {} was invalid", &mov, turn);    
+                        }
+                        _ => { unreachable!(); }
+                    }
                 },
-                ServerCommand::InvalidMove(turn, mov) => {
-                    debug!("Move {:?} at turn {} was invalid", &mov, turn);    
+                Ok(None) => { break; },
+                Err(err) => {
+                    error!("Didn't write: {}", err);
+                    ::std::process::exit(1);
                 }
-                _ => { unreachable!(); }
+                
             }
         }
     }

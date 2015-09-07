@@ -7,7 +7,7 @@ extern crate rustc_serialize;
 
 mod player;
 
-pub mod server;
+pub mod room;
 pub mod client;
 pub mod server_commands;
 pub mod client_commands;
