@@ -32,6 +32,7 @@ impl Reader {
         loop {
             match try!( de(&mut self.de_buf) ) {
                 Some(comm) => {
+                    trace!("Incomig: {:?}", &comm);
                     res.push(comm)
                 },
                 None => { break; },
