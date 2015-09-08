@@ -6,7 +6,7 @@ use rps::win_conditions::WinCondition;
 
 use player::Player;
 use game_state::GameState;
-use commands::{ServerCommand, ClientCommand};
+use commands::{ServerCommand};
 use std::mem::replace;
 
 const RED: RpsPlayer = RpsPlayer::Red;
@@ -56,21 +56,12 @@ impl<T: WinCondition<GeneralUnit>> Room<T> {
         replace(&mut self.blue.to_write, Vec::new())
     }
     
-    pub fn red_process(&mut self, command: ClientCommand) {
-        self.process(RED, command);
+    pub fn red_move(&mut self, turn: u32, mov: Move) {
+        self.process_move(RED, turn, mov);
     }
     
-    pub fn blue_process(&mut self, command: ClientCommand) {
-        self.process(BLUE, command);
-    }
-    
-    fn process(&mut self, player: RpsPlayer, command: ClientCommand) {
-        match command {
-            ClientCommand::MakeMove(turn, move_command) => {
-                self.process_move(player, turn, move_command);
-            },
-            _ => {},
-        }
+    pub fn blue_move(&mut self, turn: u32, mov: Move) {
+        self.process_move(BLUE, turn, mov);
     }
     
     fn process_move(&mut self, player: RpsPlayer, turn: u32, move_command: Move) {

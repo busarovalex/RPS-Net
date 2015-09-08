@@ -88,8 +88,7 @@ impl Inner {
     }
     
     pub fn one_cycle(&mut self) {
-        trace!("New cycle");
-        debug!("{:?}", self.state);
+        trace!("New cycle: {:?}", self.state);
         match self.state {
             State::Idle => {
                 if let Err(e) = self.ping_iter() {
