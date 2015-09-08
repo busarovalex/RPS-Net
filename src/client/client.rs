@@ -3,6 +3,7 @@ use rps::moves::Move;
 
 use std::sync::{Arc, Mutex};
 use std::io::{Error};
+use std::ops::Drop;
 
 use game_state::GameState;
 use super::inner::Inner;
@@ -21,6 +22,7 @@ impl Client {
                 {
                     let mut inner = spawn_inner.lock().unwrap();
                     inner.one_cycle();
+                    if inner.is_shot_down() { break; }
                 }
                 ::std::thread::sleep_ms(100);
             }        
@@ -94,5 +96,13 @@ impl Client {
         } else {
             false
         }
+    }
+}
+
+impl Drop for Client {
+    fn drop(&mut self) {
+        debug!("Client dropped");
+        let mut inner = self.inner.lock().unwrap();
+        inner.shut_down();
     }
 }

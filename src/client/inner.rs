@@ -29,6 +29,7 @@ pub struct Inner {
     move_to_write: Option<Move>,
     state: State,
     last_sent_move: Option<u32>,
+    shot_down: bool,
 }
 
 impl Inner {
@@ -45,16 +46,27 @@ impl Inner {
             move_to_write: None,
             state: State::Idle,
             last_sent_move: None,
+            shot_down: false,
         })    
     }
     
-    pub fn game_in_progress(&self) -> bool { self.state == State::Game }
+    pub fn game_in_progress(&self) -> bool {
+        self.state == State::Game || self.game_state.winner.is_some()
+    }
+    
     pub fn pov(&self) -> Player { self.game_state.pov() }
+    
+    pub fn is_shot_down(&self) -> bool { self.shot_down }
+    
+    pub fn shut_down(&mut self) {
+        self.shot_down = true;
+    }
     
     pub fn can_send_move(&self) -> bool {
         self.state == State::Game
         && self.game_state.current_turn == self.game_state.pov()
         && self.last_sent_move.is_none()
+        && self.game_state.winner.is_none()
     }
     
     pub fn possible_moves(&self) -> Vec<Move> {
@@ -77,6 +89,7 @@ impl Inner {
     
     pub fn one_cycle(&mut self) {
         trace!("New cycle");
+        debug!("{:?}", self.state);
         match self.state {
             State::Idle => {
                 if let Err(e) = self.ping_iter() {
@@ -108,15 +121,12 @@ impl Inner {
                 for comm in comms.iter() {
                     match *comm {
                         ServerCommand::GameState(game_state) => {
-                            debug!("Got game state: turn {}", game_state.turns);
+                            debug!("join_iter: Got game state: turn {}", game_state.turns);
                             self.game_state = game_state;
                             if game_state.turns == 1 {
                                 self.state = State::Game;
                             }
                         },
-                        ServerCommand::InvalidMove(turn, mov) => {
-                            debug!("Move {:?} at turn {} was invalid", &mov, turn);    
-                        }
                         _ => { unreachable!(); }
                     }
                 }
@@ -162,15 +172,19 @@ impl Inner {
                 for comm in comms.iter() {
                     match *comm {
                         ServerCommand::GameState(game_state) => {
-                            debug!("Got game state: turn {}", game_state.turns);
+                            debug!("game_iter: Got game state: turn {}", game_state.turns);
                             self.game_state = game_state;
                             self.last_sent_move = None;
+                            if self.game_state.winner.is_some() {
+                                debug!("game_iter: Game finished.");
+                                self.state = State::Idle;
+                            }
                         },
                         ServerCommand::InvalidMove(turn, mov) => {
                             if turn == self.game_state.turns {
                                 self.last_sent_move = None;
                             }
-                            debug!("Move {:?} at turn {} was invalid", &mov, turn);    
+                            debug!("game_iter: Move {:?} at turn {} was invalid", &mov, turn);    
                         }
                         _ => { unreachable!(); }
                     }
