@@ -1,5 +1,5 @@
-use rps::Player;
-use rps::field::PovField;
+use rps::{Player, WIDTH, HEIGHT};
+use rps::field::{Field, PovField};
 
 #[derive(Debug, Clone, Copy, RustcEncodable, RustcDecodable)]
 pub struct GameState {
@@ -10,6 +10,20 @@ pub struct GameState {
 }
 
 impl GameState {
+    pub fn dumb() -> GameState {
+        GameState {
+            turns: 999,
+            current_turn: Player::Red,
+            winner: None,
+            field: PovField {
+                pov: Player::Red,
+                field: Field {
+                    rows: [[None; WIDTH]; HEIGHT],
+                },
+            },
+        }
+    }
+    
     pub fn pov(&self) -> Player {
         self.field.pov
     }

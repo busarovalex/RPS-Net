@@ -1,4 +1,4 @@
-use server_commands::ServerCommand;
+use commands::ServerCommand;
 use game_state::GameState;
 
 pub struct Player {

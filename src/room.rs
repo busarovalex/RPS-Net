@@ -6,8 +6,7 @@ use rps::win_conditions::WinCondition;
 
 use player::Player;
 use game_state::GameState;
-use server_commands::ServerCommand;
-use client_commands::ClientCommand;
+use commands::{ServerCommand, ClientCommand};
 use std::mem::replace;
 
 const RED: RpsPlayer = RpsPlayer::Red;
