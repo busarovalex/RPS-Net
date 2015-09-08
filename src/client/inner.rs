@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use super::reader::Reader;
 use super::writer::Writer;
+use super::error::IterError;
 use game_state::GameState;
-use ser_de::{ser, de};
 use commands::ClientCommand;
 use commands::ServerCommand;
 
@@ -52,7 +52,8 @@ impl Inner {
     pub fn pov(&self) -> Player { self.game_state.pov() }
     
     pub fn can_send_move(&self) -> bool {
-        self.game_state.current_turn == self.game_state.pov()
+        self.state == State::Game
+        && self.game_state.current_turn == self.game_state.pov()
         && self.last_sent_move.is_none()
     }
     
@@ -78,23 +79,29 @@ impl Inner {
         trace!("New cycle");
         match self.state {
             State::Idle => {
-                self.ping_iter();
+                if let Err(e) = self.ping_iter() {
+                    trace!("StateIdle error: {:?}", e);
+                }
             },
             State::WaitingForGame => {
-                self.join_iter();
+                if let Err(e) = self.join_iter() {
+                    trace!("StateWaitingForGame error: {:?}", e);
+                }
             },
             State::Game => {
-                self.game_iter();
+                if let Err(e) = self.game_iter() {
+                    trace!("StateGame error: {:?}", e);
+                }
             }
         }
     }
     
-    fn join_iter(&mut self) {
+    fn join_iter(&mut self) -> Result<(), IterError> {
         self.writer.push(ClientCommand::Ping);
         
-        self.writer.write(&mut self.stream).unwrap();
+        try!( self.writer.write(&mut self.stream) );
         
-        self.reader.read(&mut self.stream).unwrap();
+        try!( self.reader.read(&mut self.stream) );
         
         match self.reader.commands() {
             Ok(comms) => {
@@ -120,19 +127,23 @@ impl Inner {
             }
             
         }
+        
+        Ok(())
     }
     
-    fn ping_iter(&mut self) {
+    fn ping_iter(&mut self) -> Result<(), IterError> {
         self.writer.push(ClientCommand::Ping);
         
-        self.writer.write(&mut self.stream).unwrap();
+        try!( self.writer.write(&mut self.stream) );
         
-        self.reader.read(&mut self.stream).unwrap();
+        try!( self.reader.read(&mut self.stream) );
         
-        self.reader.commands().unwrap();
+        try!( self.reader.commands() );
+        
+        Ok(())
     }
     
-    fn game_iter(&mut self) {
+    fn game_iter(&mut self) -> Result<(), IterError> {
         if let Some(mov) = self.move_to_write.take() {
             trace!("Sending {:?}", mov);
             let comm = ClientCommand::MakeMove(self.game_state.turns, mov);
@@ -142,9 +153,9 @@ impl Inner {
             self.writer.push(ClientCommand::Ping);
         }
         
-        self.writer.write(&mut self.stream).unwrap();
+        try!( self.writer.write(&mut self.stream) );
         
-        self.reader.read(&mut self.stream).unwrap();
+        try!( self.reader.read(&mut self.stream) );
         
         match self.reader.commands() {
             Ok(comms) => {
@@ -171,5 +182,7 @@ impl Inner {
             }
             
         }
+        
+        Ok(())
     }
 }
