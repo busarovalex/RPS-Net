@@ -33,6 +33,10 @@ impl Client {
         })
     }
     
+    pub fn game_in_progress(&self) -> bool {
+        self.inner.lock().unwrap().game_in_progress()
+    }
+    
     ///Abandons current game and sends request for a new game
     pub fn join_new_game(&self) {
         let mut inner = self.inner.lock().unwrap();
