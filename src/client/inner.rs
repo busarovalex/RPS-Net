@@ -89,8 +89,10 @@ impl Inner {
     }
     
     pub fn join(&mut self) {
-        self.writer.push(ClientCommand::JoinNewGame);
-        self.state = State::WaitingForGame;
+        if self.state != State::WaitingForGame {
+            self.writer.push(ClientCommand::JoinNewGame);
+            self.state = State::WaitingForGame;
+        }
     }
     
     pub fn one_cycle(&mut self) {
