@@ -51,7 +51,7 @@ impl Inner {
     }
     
     pub fn game_in_progress(&self) -> bool {
-        self.state == State::Game || self.game_state.winner.is_some()
+        self.state == State::Game
     }
     
     pub fn pov(&self) -> Player { self.game_state.pov() }
@@ -73,8 +73,14 @@ impl Inner {
         self.game_state.field.possible_moves()
     }
     
-    pub fn game_state(&self) -> GameState {
-        self.game_state
+    pub fn game_state(&self) -> Option<GameState> {
+        if (self.state == State::Game) || 
+           (self.state == State::Idle && self.game_state.winner.is_some()) 
+        {    
+            Some(self.game_state)
+        } else {
+            None
+        }
     }
     
     pub fn send_move(&mut self, movement: Move) {

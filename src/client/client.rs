@@ -43,11 +43,8 @@ impl Client {
     ///None if client didn't connect or didn't join a game yet
     pub fn game_state(&self) -> Option<GameState> {
         let inner = self.inner.lock().unwrap();
-        if inner.game_in_progress() {
-            Some(inner.game_state())
-        } else {
-            None
-        }
+        
+        inner.game_state()
     }
     
     ///Returns current player's color,
