@@ -59,6 +59,10 @@ impl Inner {
     pub fn is_shot_down(&self) -> bool { self.shot_down }
     
     pub fn shut_down(&mut self) {
+        match self.stream.shutdown(::std::net::Shutdown::Both) {
+            Err(err) => { error!("Error shutting down stream: {}", err); },
+            _ => {},
+        }
         self.shot_down = true;
     }
     

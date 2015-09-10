@@ -21,8 +21,8 @@ impl Client {
             loop {
                 {
                     let mut inner = spawn_inner.lock().unwrap();
-                    inner.one_cycle();
                     if inner.is_shot_down() { break; }
+                    inner.one_cycle();
                 }
                 ::std::thread::sleep_ms(100);
             }        
@@ -97,6 +97,12 @@ impl Client {
         } else {
             false
         }
+    }
+    
+    ///Shuts down tcp stream
+    pub fn shut_down(&self) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.shut_down();
     }
 }
 
