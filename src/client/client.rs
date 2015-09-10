@@ -68,7 +68,7 @@ impl Client {
     ///Sends move to server
     ///returns false if it isn't the players turn, 
     ///or the game was over, 
-    ///or the turn was already sent this turn and it is unknown if it was valid or not
+    ///or the move was already sent this turn and it is unknown if it was valid or not
     pub fn send_move(&self, movement: Move) -> bool {
         let mut inner = self.inner.lock().unwrap();
         if inner.can_send_move() {
