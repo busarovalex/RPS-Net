@@ -13,6 +13,8 @@ pub struct Client {
 }
 
 impl Client {
+    
+    ///Tries to connect to the server, blocks the execution while connecting
     pub fn new(adress: &str) -> Result<Client, Error>{
         let inner = Arc::new(Mutex::new( try!(Inner::connect(adress)) ));
         
@@ -33,6 +35,7 @@ impl Client {
         })
     }
     
+    ///Returns true is any game is currently running
     pub fn game_in_progress(&self) -> bool {
         self.inner.lock().unwrap().game_in_progress()
     }
@@ -99,7 +102,7 @@ impl Client {
         }
     }
     
-    ///Shuts down tcp stream
+    ///Shuts down tcp stream, this struct is no longer usable after calling this function
     pub fn shut_down(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.shut_down();
