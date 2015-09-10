@@ -27,7 +27,7 @@ pub fn de<T: Decodable>(buf: &mut Vec<u8>) -> Result<Option<T>, DecodingError> {
 
 #[test]
 fn test_ser_de() {
-    use client_commands::ClientCommand;
+    use commands::ClientCommand;
     let ping = ClientCommand::Ping;
     let mut vec = ser(ping);
     println!("{:?}", &vec);
